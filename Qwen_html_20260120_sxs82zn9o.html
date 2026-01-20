@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>销售CRM跟进记录生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+
+        header h1 {
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .input-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .status-success { color: #28a745; font-weight: bold; }
+        .status-following { color: #ffc107; font-weight: bold; }
+        .status-no-interest { color: #6c757d; font-weight: bold; }
+        .status-lost { color: #dc3545; font-weight: bold; }
+        .status-budget { color: #fd7e14; font-weight: bold; }
+
+        .amount {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .followup-content {
+            font-style: italic;
+            color: #555;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            th, td {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+            
+            table {
+                min-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>销售CRM跟进记录生成器</h1>
+            <p>随机生成电子合同采购跟进记录，用于测试和演示</p>
+        </header>
+
+        <div class="controls">
+            <div class="input-group">
+                <label for="recordCount">生成记录数量:</label>
+                <select id="recordCount">
+                    <option value="5">5条</option>
+                    <option value="10" selected>10条</option>
+                    <option value="20">20条</option>
+                    <option value="50">50条</option>
+                </select>
+            </div>
+            
+            <button id="generateBtn" class="btn-primary">生成记录</button>
+            <button id="clearBtn" class="btn-secondary">清空记录</button>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            正在生成记录...
+        </div>
+
+        <div class="table-container">
+            <table id="followupTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>客户名称</th>
+                        <th>产品</th>
+                        <th>联系方式</th>
+                        <th>跟进日期</th>
+                        <th>销售阶段</th>
+                        <th>状态</th>
+                        <th>金额(元)</th>
+                        <th>下次联系</th>
+                        <th>跟进内容</th>
+                        <th>备注</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- 数据将通过JavaScript动态填充 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.getElementById('generateBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const recordCount = document.getElementById('recordCount');
+            const tableBody = document.getElementById('tableBody');
+            const loading = document.getElementById('loading');
+
+            // 数据配置
+            const CUSTOMERS = [
+                "华为技术有限公司", "腾讯科技", "阿里巴巴集团", "百度在线网络", "字节跳动",
+                "小米科技", "美团点评", "京东商城", "拼多多", "滴滴出行",
+                "网易公司", "新浪网", "搜狐公司", "携程旅行", "去哪儿网"
+            ];
+
+            const PRODUCTS = [
+                "电子合同管理系统", "数字签名解决方案", "合同模板库", "合同审批流程", 
+                "合同存证服务", "智能合同审查", "合同风险预警", "合同生命周期管理"
+            ];
+
+            const CONTACT_TYPES = ["电话", "邮件", "面谈", "视频会议", "微信"];
+            const SALES_STAGES = ["初次接触", "需求确认", "方案演示", "报价谈判", "合同签署", "项目实施"];
+            const STATUS_OPTIONS = ["成功", "跟进中", "暂无意向", "竞争失败", "预算不足"];
+
+            // 电子合同采购跟进话术模板
+            const FOLLOWUP_TEMPLATES = [
+                "电子合同项目近期启动，和技术负责人沟通，预计本季度启动，随时保持联络。",
+                "与需求部门负责人交流电子合同系统需求，已开始准备立项，后续密切跟进。",
+                "电子合同采购项目已列入预算，正与IT部门协调技术方案，保持定期沟通。",
+                "初步了解客户对电子合同系统的期望，下周安排技术交流会议，持续关注进展。",
+                "电子合同项目已通过内部评审，准备招标流程，我们将积极争取参与机会。",
+                "与法务部门讨论电子合同合规性要求，正在制定针对性解决方案，及时汇报。",
+                "客户对电子合同安全性有较高要求，已提交技术白皮书，等待反馈意见。",
+                "电子合同项目预算已批准，下周开始正式采购流程，我们会全力配合。",
+                "技术负责人表示对我们的电子合同方案感兴趣，约定下周进行深度演示。",
+                "电子合同项目已确定供应商范围，我们已提交详细方案，等待最终决策。",
+                "客户正在评估多个电子合同解决方案，我们已安排现场演示，加强竞争优势。",
+                "电子合同项目时间节点提前，客户希望尽快确定供应商，我们需加快推进。",
+                "与采购部门沟通电子合同项目采购流程，已准备好相关资质文件，等待通知。",
+                "电子合同项目涉及多个部门协作，已建立联合工作组，定期同步项目进展。",
+                "客户对电子合同系统集成有特殊要求，技术团队正在制定个性化方案。",
+                "电子合同项目预算超预期，客户正在申请追加资金，我们将提供性价比方案。",
+                "项目负责人变更，已与新负责人建立联系，重新梳理项目需求和时间安排。",
+                "电子合同采购流程复杂，涉及多轮比价和评估，我们将全程协助推进。",
+                "客户希望电子合同系统能与现有ERP系统集成，我们已提供移动版解决方案。",
+                "电子合同项目受到高层重视，预计采购决策会加快，我们需要做好充分准备。",
+                "与财务部门讨论电子合同项目的ROI分析，已提供详细的成本效益报告。",
+                "电子合同项目面临合规性挑战，正在与监管部门沟通，确保方案符合法规要求。",
+                "客户对电子合同系统的易用性要求很高，我们已安排用户体验优化方案。",
+                "电子合同项目采购周期较长，已建立定期沟通机制，确保信息同步及时。",
+                "技术部门对电子合同系统性能有严格要求，已完成压力测试方案设计。",
+                "电子合同项目涉及数据迁移，已制定详细的数据安全保护措施。",
+                "客户希望电子合同系统支持移动端操作，我们已提供移动版解决方案。",
+                "电子合同项目采购标准发生变化，正在调整我们的投标方案以满足新要求。",
+                "与项目管理办公室确认电子合同项目里程碑节点，按计划推进各项工作。",
+                "电子合同项目采购预算有限，我们已提供分期付款和租赁模式选项。"
+            ];
+
+            // 生成随机日期
+            function getRandomDate() {
+                const start = new Date();
+                start.setDate(start.getDate() - 90); // 最近90天内
+                
+                const end = new Date();
+                const randomDate = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+                
+                return randomDate.toISOString().split('T')[0];
+            }
+
+            // 生成下一次联系日期
+            function getNextContactDate() {
+                const today = new Date();
+                const nextDate = new Date(today.getTime() + Math.random() * 30 * 24 * 60 * 60 * 1000); // 未来30天内
+                return nextDate.toISOString().split('T')[0];
+            }
+
+            // 生成随机跟进记录
+            function generateRandomFollowup(index) {
+                return {
+                    id: index + 1,
+                    customer: CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)],
+                    product: PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)],
+                    contact_type: CONTACT_TYPES[Math.floor(Math.random() * CONTACT_TYPES.length)],
+                    followup_date: getRandomDate(),
+                    sales_stage: SALES_STAGES[Math.floor(Math.random() * SALES_STAGES.length)],
+                    status: STATUS_OPTIONS[Math.floor(Math.random() * STATUS_OPTIONS.length)],
+                    amount: Math.round(Math.random() * 490000 + 10000),
+                    next_contact_date: getNextContactDate(),
+                    followup_content: FOLLOWUP_TEMPLATES[Math.floor(Math.random() * FOLLOWUP_TEMPLATES.length)],
+                    notes: `关于${PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)]}的技术交流`
+                };
+            }
+
+            // 生成记录函数
+            function generateRecords() {
+                const count = parseInt(recordCount.value);
+                
+                try {
+                    loading.style.display = 'block';
+                    tableBody.innerHTML = '';
+                    
+                    // 生成指定数量的记录
+                    const records = [];
+                    for (let i = 0; i < count; i++) {
+                        records.push(generateRandomFollowup(i));
+                    }
+                    
+                    displayRecords(records);
+                } catch (error) {
+                    console.error('生成记录时出错:', error);
+                    alert('生成记录失败');
+                } finally {
+                    loading.style.display = 'none';
+                }
+            }
+
+            // 显示记录函数
+            function displayRecords(records) {
+                tableBody.innerHTML = '';
+                
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    
+                    // 添加状态类名
+                    let statusClass = '';
+                    switch(record.status) {
+                        case '成功':
+                            statusClass = 'status-success';
+                            break;
+                        case '跟进中':
+                            statusClass = 'status-following';
+                            break;
+                        case '暂无意向':
+                            statusClass = 'status-no-interest';
+                            break;
+                        case '竞争失败':
+                            statusClass = 'status-lost';
+                            break;
+                        case '预算不足':
+                            statusClass = 'status-budget';
+                            break;
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${record.id}</td>
+                        <td>${record.customer}</td>
+                        <td>${record.product}</td>
+                        <td>${record.contact_type}</td>
+                        <td>${record.followup_date}</td>
+                        <td>${record.sales_stage}</td>
+                        <td class="${statusClass}">${record.status}</td>
+                        <td class="amount">¥${record.amount.toLocaleString()}</td>
+                        <td>${record.next_contact_date}</td>
+                        <td class="followup-content">${record.followup_content}</td>
+                        <td>${record.notes}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // 清空记录函数
+            function clearRecords() {
+                tableBody.innerHTML = '';
+            }
+
+            // 事件监听器
+            generateBtn.addEventListener('click', generateRecords);
+            clearBtn.addEventListener('click', clearRecords);
+
+            // 页面加载时生成默认记录
+            generateRecords();
+        });
+    </script>
+</body>
+</html>
